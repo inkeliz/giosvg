@@ -69,8 +69,6 @@ func NewIcon(iconOp *IconOp) *Icon {
 		iconOp: iconOp,
 		driver: &svgdraw.Driver{
 			Op:      new(op.Ops),
-			PathOps: make([]*op.Ops, 0, len(iconOp.render.SVGPaths)),
-			Index:   0,
 		},
 		lastSize: image.Point{},
 	}
@@ -97,12 +95,8 @@ func (icon *Icon) Layout(gtx layout.Context) layout.Dimensions {
 func (icon *Icon) parserToGio(gtx layout.Context) {
 	icon.driver.Reset()
 
-	stack := op.Save(icon.driver.Op)
 	macro := op.Record(icon.driver.Op)
-
 	icon.iconOp.render.SetTarget(0, 0, float64(gtx.Constraints.Max.X), float64(gtx.Constraints.Max.Y))
 	icon.iconOp.render.Draw(icon.driver, 1.0)
-
 	icon.macro = macro.Stop()
-	stack.Load()
 }

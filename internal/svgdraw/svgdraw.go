@@ -15,46 +15,33 @@ func _f32(a fixed.Point26_6) f32.Point {
 
 type Driver struct {
 	Op      *op.Ops
-	PathOps []*op.Ops
-	Index   int
 }
 
 func (d *Driver) Reset() {
-	d.Index = 0
 	d.Op.Reset()
-	for _, o := range d.PathOps {
-		o.Reset()
-	}
 }
 
-func (d *Driver) NewPathOp() *op.Ops {
-	if len(d.PathOps) <= d.Index {
-		d.PathOps = append(d.PathOps, new(op.Ops))
-	}
-	d.Index++
-	return d.PathOps[d.Index-1]
-}
 
 func (d *Driver) SetupDrawers(willFill, willStroke bool) (f svgparser.Filler, s svgparser.Stroker) {
 	if willFill {
-		o := d.NewPathOp()
+		stack := op.Save(d.Op)
 		path := new(clip.Path)
-		path.Begin(o)
-		f = &filler{op: d.Op, pathOp: o, path: path}
+		path.Begin(d.Op)
+		f = &filler{op: d.Op, stack: stack,  path: path}
 	}
 	if willStroke {
-		o := d.NewPathOp()
+		stack := op.Save(d.Op)
 		path := new(clip.Path)
-		path.Begin(o)
-		s = &stroker{op: d.Op, pathOp: o, path: path}
+		path.Begin(d.Op)
+		s = &stroker{op: d.Op, stack: stack, path: path}
 	}
 	return f, s
 }
 
 type filler struct {
 	op     *op.Ops
-	pathOp *op.Ops
 	path   *clip.Path
+	stack  op.StateOp
 }
 
 func (f *filler) Clear() {}
@@ -82,7 +69,7 @@ func (f *filler) Stop(closeLoop bool) {
 }
 
 func (f *filler) Draw(color svgparser.Pattern, opacity float64) {
-	defer op.Save(f.op).Load()
+	defer f.stack.Load()
 
 	clip.Outline{Path: f.path.End()}.Op().Add(f.op)
 	switch c := color.(type) {
@@ -98,14 +85,13 @@ func (f *filler) SetWinding(useNonZeroWinding bool) {}
 type stroker struct {
 	op      *op.Ops
 	path    *clip.Path
-	pathOp  *op.Ops
 	options clip.StrokeStyle
+	stack   op.StateOp
 }
 
 func (s *stroker) Clear() {}
 
 func (s *stroker) Start(a fixed.Point26_6) {
-	s.path.Begin(s.pathOp)
 	s.path.MoveTo(_f32(a))
 }
 
@@ -128,7 +114,7 @@ func (s *stroker) Stop(closeLoop bool) {
 }
 
 func (s *stroker) Draw(color svgparser.Pattern, opacity float64) {
-	defer op.Save(s.op).Load()
+	defer s.stack.Load()
 
 	clip.Stroke{Path: s.path.End(), Style: s.options}.Op().Add(s.op)
 	switch c := color.(type) {
