@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/paint"
 	"github.com/inkeliz/giosvg/internal/svgdraw"
 	"github.com/inkeliz/giosvg/internal/svgparser"
 	"image"
@@ -49,9 +50,7 @@ func NewIconOp(data []byte) (*IconOp, error) {
 type Icon struct {
 	iconOp *IconOp
 
-	driver *svgdraw.Driver
-	macro  op.CallOp
-
+	driver   *svgdraw.Driver
 	lastSize image.Point
 }
 
@@ -66,10 +65,8 @@ type Icon struct {
 // significant slower. You can re-use the same IconOp with multiple Icon.
 func NewIcon(iconOp *IconOp) *Icon {
 	return &Icon{
-		iconOp: iconOp,
-		driver: &svgdraw.Driver{
-			Op:      new(op.Ops),
-		},
+		iconOp:   iconOp,
+		driver:   &svgdraw.Driver{},
 		lastSize: image.Point{},
 	}
 }
@@ -79,15 +76,21 @@ func NewIcon(iconOp *IconOp) *Icon {
 // If the SVG uses `currentColor` you can set the color using
 // paint.ColorOp.
 func (icon *Icon) Layout(gtx layout.Context) layout.Dimensions {
-	defer op.Save(gtx.Ops).Load()
-
 	if icon.lastSize != gtx.Constraints.Max {
 		// If the size changes, we can't re-use the macro.
+		icon.lastSize = gtx.Constraints.Max
 		icon.parserToGio(gtx)
 	}
 
-	icon.lastSize = gtx.Constraints.Max
-	icon.macro.Add(gtx.Ops)
+	for _, v := range icon.driver.Ops {
+		stack := op.Save(gtx.Ops)
+		v.Path.Add(gtx.Ops)
+		if v.Color != nil {
+			v.Color.Add(gtx.Ops)
+		}
+		paint.PaintOp{}.Add(gtx.Ops)
+		stack.Load()
+	}
 
 	return layout.Dimensions{Size: gtx.Constraints.Max}
 }
@@ -95,8 +98,6 @@ func (icon *Icon) Layout(gtx layout.Context) layout.Dimensions {
 func (icon *Icon) parserToGio(gtx layout.Context) {
 	icon.driver.Reset()
 
-	macro := op.Record(icon.driver.Op)
 	icon.iconOp.render.SetTarget(0, 0, float64(gtx.Constraints.Max.X), float64(gtx.Constraints.Max.Y))
 	icon.iconOp.render.Draw(icon.driver, 1.0)
-	icon.macro = macro.Stop()
 }
