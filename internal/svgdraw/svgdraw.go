@@ -7,6 +7,7 @@ import (
 	"gioui.org/op/paint"
 	"github.com/inkeliz/giosvg/internal/svgparser"
 	"golang.org/x/image/math/fixed"
+	"math"
 )
 
 func _f32(a fixed.Point26_6) f32.Point {
@@ -97,6 +98,9 @@ func (f *filler) Draw(color svgparser.Pattern, opacity float64) {
 	case svgparser.CurrentColor:
 		// NO-OP
 	case svgparser.PlainColor:
+		if opacity < 1 {
+			c.NRGBA.A = uint8(math.Round(256*opacity))
+		}
 		f.pathOp.Color = &paint.ColorOp{Color: c.NRGBA}
 	}
 }
@@ -148,6 +152,9 @@ func (s *stroker) Draw(color svgparser.Pattern, opacity float64) {
 	case svgparser.CurrentColor:
 		// NO-OP
 	case svgparser.PlainColor:
+		if opacity < 1 {
+			c.NRGBA.A = uint8(math.Round(256*opacity))
+		}
 		s.pathOp.Color = &paint.ColorOp{Color: c.NRGBA}
 	}
 }

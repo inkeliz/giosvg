@@ -144,6 +144,10 @@ func (c *iconCursor) readStyleAttr(curStyle *PathStyle, k, v string) error {
 		curStyle.FillerColor = optCol.asPattern()
 		return err
 	case "stroke":
+		if strings.ToLower(v) == "currentcolor" {
+			curStyle.FillerColor = CurrentColor{}
+			break
+		}
 		gradient, ok := c.readGradURL(v, curStyle.LinerColor)
 		if ok {
 			curStyle.LinerColor = gradient
