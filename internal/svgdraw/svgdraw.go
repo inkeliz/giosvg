@@ -16,6 +16,7 @@ func _f32(a fixed.Point26_6) f32.Point {
 
 type Driver struct {
 	Ops   []*DrawOp
+	Scale float32
 	index int
 }
 
@@ -49,7 +50,7 @@ func (d *Driver) SetupDrawers(willFill, willStroke bool) (f svgparser.Filler, s 
 		f = &filler{pathOp: d.NewDrawOp()}
 	}
 	if willStroke {
-		s = &stroker{pathOp: d.NewDrawOp()}
+		s = &stroker{pathOp: d.NewDrawOp(), scale: d.Scale}
 	}
 	return f, s
 }
@@ -109,6 +110,7 @@ type stroker struct {
 	path    *clip.Path
 	options clip.StrokeStyle
 	pathOp  *DrawOp
+	scale   float32
 }
 
 func (s *stroker) Clear() {}
@@ -156,7 +158,7 @@ func (s *stroker) Draw(color svgparser.Pattern, opacity float64) {
 }
 
 func (s *stroker) SetStrokeOptions(options svgparser.StrokeOptions) {
-	s.options.Width = float32(options.LineWidth.Round())
+	s.options.Width = float32(options.LineWidth.Round()) * s.scale
 	s.options.Miter = float32(options.Join.MiterLimit.Round())
 
 	switch options.Join.LeadLineCap {

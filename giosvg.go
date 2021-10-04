@@ -97,7 +97,7 @@ func (icon *Icon) Layout(gtx layout.Context) layout.Dimensions {
 
 func (icon *Icon) parserToGio(gtx layout.Context) {
 	icon.driver.Reset()
-
+	icon.driver.Scale = gtx.Metric.PxPerDp
 	icon.iconOp.render.SetTarget(0, 0, float64(gtx.Constraints.Max.X), float64(gtx.Constraints.Max.Y))
 	icon.iconOp.render.Draw(icon.driver, 1.0)
 }
