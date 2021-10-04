@@ -57,14 +57,12 @@ func (d *Driver) SetupDrawers(willFill, willStroke bool) (f svgparser.Filler, s 
 type filler struct {
 	path   *clip.Path
 	pathOp *DrawOp
-	stack  op.StateOp
 }
 
 func (f *filler) Clear() {}
 
 func (f *filler) Start(a fixed.Point26_6) {
 	if f.path == nil {
-		f.stack = op.Save(f.pathOp.Ops)
 		f.path = new(clip.Path)
 		f.path.Begin(f.pathOp.Ops)
 	}
@@ -85,21 +83,21 @@ func (f *filler) CubeBezier(b, c, d fixed.Point26_6) {
 }
 
 func (f *filler) Stop(closeLoop bool) {
-	if closeLoop {
+	if f.path != nil {
 		f.path.Close()
 	}
 }
 
 func (f *filler) Draw(color svgparser.Pattern, opacity float64) {
-	defer f.stack.Load()
-
 	f.pathOp.Path = clip.Outline{Path: f.path.End()}.Op()
+
+	defer op.Save(f.pathOp.Ops).Load()
 	switch c := color.(type) {
 	case svgparser.CurrentColor:
 		// NO-OP
 	case svgparser.PlainColor:
 		if opacity < 1 {
-			c.NRGBA.A = uint8(math.Round(256*opacity))
+			c.NRGBA.A = uint8(math.Round(256 * opacity))
 		}
 		f.pathOp.Color = &paint.ColorOp{Color: c.NRGBA}
 	}
@@ -111,14 +109,12 @@ type stroker struct {
 	path    *clip.Path
 	options clip.StrokeStyle
 	pathOp  *DrawOp
-	stack   op.StateOp
 }
 
 func (s *stroker) Clear() {}
 
 func (s *stroker) Start(a fixed.Point26_6) {
 	if s.path == nil {
-		s.stack = op.Save(s.pathOp.Ops)
 		s.path = new(clip.Path)
 		s.path.Begin(s.pathOp.Ops)
 	}
@@ -139,21 +135,21 @@ func (s *stroker) CubeBezier(b, c, d fixed.Point26_6) {
 }
 
 func (s *stroker) Stop(closeLoop bool) {
-	if closeLoop {
+	if s.path != nil && closeLoop {
 		s.path.Close()
 	}
 }
 
 func (s *stroker) Draw(color svgparser.Pattern, opacity float64) {
-	defer s.stack.Load()
-
 	s.pathOp.Path = clip.Stroke{Path: s.path.End(), Style: s.options}.Op()
+
+	defer op.Save(s.pathOp.Ops).Load()
 	switch c := color.(type) {
 	case svgparser.CurrentColor:
 		// NO-OP
 	case svgparser.PlainColor:
 		if opacity < 1 {
-			c.NRGBA.A = uint8(math.Round(256*opacity))
+			c.NRGBA.A = uint8(math.Round(256 * opacity))
 		}
 		s.pathOp.Color = &paint.ColorOp{Color: c.NRGBA}
 	}
