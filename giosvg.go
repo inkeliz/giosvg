@@ -52,6 +52,8 @@ type Icon struct {
 
 	driver   *svgdraw.Driver
 	lastSize image.Point
+	macro    []op.CallOp
+	op       []*op.Ops
 }
 
 // NewIcon creates the layout.Widget from the iconOp.
@@ -68,6 +70,14 @@ func NewIcon(iconOp *IconOp) *Icon {
 		iconOp:   iconOp,
 		driver:   &svgdraw.Driver{},
 		lastSize: image.Point{},
+
+		// Due to some bug (?) in Gio, that escape the stack,
+		// we need to create one macro for each operation.
+		//
+		// That macro is mandatory to eliminate the allocation
+		// by internal/stroke, which is significant.
+		macro:    make([]op.CallOp, 0, 16),
+		op:       make([]*op.Ops, 0, 16),
 	}
 }
 
@@ -80,16 +90,37 @@ func (icon *Icon) Layout(gtx layout.Context) layout.Dimensions {
 		// If the size changes, we can't re-use the macro.
 		icon.lastSize = gtx.Constraints.Max
 		icon.parserToGio(gtx)
+
+		icon.macro = nil
+
+		for i, v := range icon.driver.Ops {
+			var ops *op.Ops
+			if len(icon.op) > i {
+				ops = icon.op[i]
+				ops.Reset()
+			} else {
+				ops = new(op.Ops)
+				icon.op = append(icon.op, ops)
+			}
+
+			macro := op.Record(ops)
+
+			stack := op.Save(ops)
+			v.Path.Add(ops)
+			if v.Color != nil {
+				v.Color.Add(ops)
+			}
+			paint.PaintOp{}.Add(ops)
+			stack.Load()
+
+			stop := macro.Stop()
+
+			icon.macro = append(icon.macro, stop)
+		}
 	}
 
-	for _, v := range icon.driver.Ops {
-		stack := op.Save(gtx.Ops)
-		v.Path.Add(gtx.Ops)
-		if v.Color != nil {
-			v.Color.Add(gtx.Ops)
-		}
-		paint.PaintOp{}.Add(gtx.Ops)
-		stack.Load()
+	for _, m := range icon.macro {
+		m.Add(gtx.Ops)
 	}
 
 	return layout.Dimensions{Size: gtx.Constraints.Max}
