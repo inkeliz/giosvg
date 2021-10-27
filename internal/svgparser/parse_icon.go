@@ -145,7 +145,7 @@ func (c *iconCursor) readStyleAttr(curStyle *PathStyle, k, v string) error {
 		return err
 	case "stroke":
 		if strings.ToLower(v) == "currentcolor" {
-			curStyle.FillerColor = CurrentColor{}
+			curStyle.LinerColor = CurrentColor{}
 			break
 		}
 		gradient, ok := c.readGradURL(v, curStyle.LinerColor)
