@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/op/paint"
 	"github.com/inkeliz/giosvg/internal/svgdraw"
 	"github.com/inkeliz/giosvg/internal/svgparser"
 	"image"
@@ -52,8 +51,8 @@ type Icon struct {
 
 	driver   *svgdraw.Driver
 	lastSize image.Point
-	macro    []op.CallOp
-	op       []*op.Ops
+	macro    op.CallOp
+	op       *op.Ops
 }
 
 // NewIcon creates the layout.Widget from the iconOp.
@@ -76,8 +75,7 @@ func NewIcon(iconOp *IconOp) *Icon {
 		//
 		// That macro is mandatory to eliminate the allocation
 		// by internal/stroke, which is significant.
-		macro:    make([]op.CallOp, 0, 16),
-		op:       make([]*op.Ops, 0, 16),
+		op: new(op.Ops),
 	}
 }
 
@@ -89,46 +87,20 @@ func (icon *Icon) Layout(gtx layout.Context) layout.Dimensions {
 	if icon.lastSize != gtx.Constraints.Max {
 		// If the size changes, we can't re-use the macro.
 		icon.lastSize = gtx.Constraints.Max
+
+		icon.op.Reset()
+		macro := op.Record(icon.op)
 		icon.parserToGio(gtx)
-
-		icon.macro = nil
-
-		for i, v := range icon.driver.Ops {
-			var ops *op.Ops
-			if len(icon.op) > i {
-				ops = icon.op[i]
-				ops.Reset()
-			} else {
-				ops = new(op.Ops)
-				icon.op = append(icon.op, ops)
-			}
-
-			macro := op.Record(ops)
-
-			stack := op.Save(ops)
-			v.Path.Add(ops)
-			if v.Color != nil {
-				v.Color.Add(ops)
-			}
-			paint.PaintOp{}.Add(ops)
-			stack.Load()
-
-			stop := macro.Stop()
-
-			icon.macro = append(icon.macro, stop)
-		}
+		icon.macro = macro.Stop()
 	}
 
-	for _, m := range icon.macro {
-		m.Add(gtx.Ops)
-	}
-
+	icon.macro.Add(gtx.Ops)
 	return layout.Dimensions{Size: gtx.Constraints.Max}
 }
 
 func (icon *Icon) parserToGio(gtx layout.Context) {
-	icon.driver.Reset()
 	icon.driver.Scale = gtx.Metric.PxPerDp
+	icon.driver.Ops = icon.op
 	icon.iconOp.render.SetTarget(0, 0, float64(gtx.Constraints.Max.X), float64(gtx.Constraints.Max.Y))
 	icon.iconOp.render.Draw(icon.driver, 1.0)
 }

@@ -15,49 +15,24 @@ func _f32(a fixed.Point26_6) f32.Point {
 }
 
 type Driver struct {
-	Ops   []*DrawOp
+	Ops   *op.Ops
 	Scale float32
 	index int
 }
 
-func (d *Driver) Reset() {
-	for i := range d.Ops {
-		d.Ops[i].Ops.Reset()
-		d.Ops[i].Color = nil
-	}
-	d.index = 0
-}
-
-type DrawOp struct {
-	*op.Ops
-	Path  clip.Op
-	Color *paint.ColorOp
-}
-
-func (d *Driver) NewDrawOp() *DrawOp {
-	defer func() { d.index++ }()
-	if len(d.Ops) > d.index {
-		return d.Ops[d.index]
-	}
-
-	o := &DrawOp{Ops: new(op.Ops)}
-	d.Ops = append(d.Ops, o)
-	return o
-}
-
 func (d *Driver) SetupDrawers(willFill, willStroke bool) (f svgparser.Filler, s svgparser.Stroker) {
 	if willFill {
-		f = &filler{pathOp: d.NewDrawOp()}
+		f = &filler{pathOp: d.Ops}
 	}
 	if willStroke {
-		s = &stroker{pathOp: d.NewDrawOp(), scale: d.Scale}
+		s = &stroker{pathOp: d.Ops, scale: d.Scale}
 	}
 	return f, s
 }
 
 type filler struct {
 	path   *clip.Path
-	pathOp *DrawOp
+	pathOp *op.Ops
 }
 
 func (f *filler) Clear() {}
@@ -65,7 +40,7 @@ func (f *filler) Clear() {}
 func (f *filler) Start(a fixed.Point26_6) {
 	if f.path == nil {
 		f.path = new(clip.Path)
-		f.path.Begin(f.pathOp.Ops)
+		f.path.Begin(f.pathOp)
 	}
 
 	f.path.MoveTo(_f32(a))
@@ -90,27 +65,27 @@ func (f *filler) Stop(closeLoop bool) {
 }
 
 func (f *filler) Draw(color svgparser.Pattern, opacity float64) {
-	f.pathOp.Path = clip.Outline{Path: f.path.End()}.Op()
+	defer clip.Outline{Path: f.path.End()}.Op().Push(f.pathOp).Pop()
 
-	defer op.Save(f.pathOp.Ops).Load()
 	switch c := color.(type) {
 	case svgparser.CurrentColor:
-		// NO-OP
+		paint.PaintOp{}.Add(f.pathOp)
 	case svgparser.PlainColor:
 		if opacity < 1 {
 			c.NRGBA.A = uint8(math.Round(256 * opacity))
 		}
-		f.pathOp.Color = &paint.ColorOp{Color: c.NRGBA}
+		paint.ColorOp{Color: c.NRGBA}.Add(f.pathOp)
+		paint.PaintOp{}.Add(f.pathOp)
 	}
 }
 
 func (f *filler) SetWinding(useNonZeroWinding bool) {}
 
 type stroker struct {
-	path    *clip.Path
-	options clip.StrokeStyle
-	pathOp  *DrawOp
-	scale   float32
+	path   *clip.Path
+	pathOp *op.Ops
+	scale  float32
+	Width  float32
 }
 
 func (s *stroker) Clear() {}
@@ -118,7 +93,7 @@ func (s *stroker) Clear() {}
 func (s *stroker) Start(a fixed.Point26_6) {
 	if s.path == nil {
 		s.path = new(clip.Path)
-		s.path.Begin(s.pathOp.Ops)
+		s.path.Begin(s.pathOp)
 	}
 
 	s.path.MoveTo(_f32(a))
@@ -143,37 +118,20 @@ func (s *stroker) Stop(closeLoop bool) {
 }
 
 func (s *stroker) Draw(color svgparser.Pattern, opacity float64) {
-	s.pathOp.Path = clip.Stroke{Path: s.path.End(), Style: s.options}.Op()
+	defer clip.Stroke{Path: s.path.End(), Width: s.Width}.Op().Push(s.pathOp).Pop()
 
-	defer op.Save(s.pathOp.Ops).Load()
 	switch c := color.(type) {
 	case svgparser.CurrentColor:
-		// NO-OP
+		paint.PaintOp{}.Add(s.pathOp)
 	case svgparser.PlainColor:
 		if opacity < 1 {
 			c.NRGBA.A = uint8(math.Round(256 * opacity))
 		}
-		s.pathOp.Color = &paint.ColorOp{Color: c.NRGBA}
+		paint.ColorOp{Color: c.NRGBA}.Add(s.pathOp)
+		paint.PaintOp{}.Add(s.pathOp)
 	}
 }
 
 func (s *stroker) SetStrokeOptions(options svgparser.StrokeOptions) {
-	s.options.Width = float32(options.LineWidth.Round()) * s.scale
-	s.options.Miter = float32(options.Join.MiterLimit.Round())
-
-	switch options.Join.LeadLineCap {
-	case svgparser.SquareCap:
-		s.options.Cap = clip.SquareCap
-	case svgparser.RoundCap:
-		s.options.Cap = clip.RoundCap
-	default:
-		s.options.Cap = clip.FlatCap
-	}
-
-	switch options.Join.LineJoin {
-	case svgparser.Bevel:
-		s.options.Join = clip.BevelJoin
-	default:
-		s.options.Join = clip.RoundJoin
-	}
+	s.Width = float32(options.LineWidth.Round()) * s.scale
 }
