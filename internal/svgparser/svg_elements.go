@@ -1,8 +1,8 @@
 package svgparser
 
 import (
-	"encoding/xml"
 	"errors"
+	"github.com/inkeliz/giosvg/internal/svgparser/simplexml"
 	"strings"
 
 	"golang.org/x/image/math/fixed"
@@ -14,7 +14,7 @@ func init() {
 	drawFuncs["use"] = useF
 }
 
-type svgFunc func(c *iconCursor, attrs []xml.Attr) error
+type svgFunc func(c *iconCursor, attrs []simplexml.Attr) error
 
 var drawFuncs = map[string]svgFunc{
 	"svg":            svgF,
@@ -34,7 +34,7 @@ var drawFuncs = map[string]svgFunc{
 	"radialGradient": radialGradientF,
 }
 
-func svgF(c *iconCursor, attrs []xml.Attr) error {
+func svgF(c *iconCursor, attrs []simplexml.Attr) error {
 	c.icon.ViewBox.X = 0
 	c.icon.ViewBox.Y = 0
 	c.icon.ViewBox.W = 0
@@ -69,8 +69,8 @@ func svgF(c *iconCursor, attrs []xml.Attr) error {
 	}
 	return nil
 }
-func gF(*iconCursor, []xml.Attr) error { return nil } // g does nothing but push the style
-func rectF(c *iconCursor, attrs []xml.Attr) error {
+func gF(*iconCursor, []simplexml.Attr) error { return nil } // g does nothing but push the style
+func rectF(c *iconCursor, attrs []simplexml.Attr) error {
 	var x, y, w, h, rx, ry float64
 	var err error
 	for _, attr := range attrs {
@@ -98,7 +98,7 @@ func rectF(c *iconCursor, attrs []xml.Attr) error {
 	c.path.addRoundRect(x+c.curX, y+c.curY, w+x+c.curX, h+y+c.curY, rx, ry, 0)
 	return nil
 }
-func circleF(c *iconCursor, attrs []xml.Attr) error {
+func circleF(c *iconCursor, attrs []simplexml.Attr) error {
 	var cx, cy, rx, ry float64
 	var err error
 	for _, attr := range attrs {
@@ -125,7 +125,7 @@ func circleF(c *iconCursor, attrs []xml.Attr) error {
 	c.ellipseAt(cx+c.curX, cy+c.curY, rx, ry)
 	return nil
 }
-func lineF(c *iconCursor, attrs []xml.Attr) error {
+func lineF(c *iconCursor, attrs []simplexml.Attr) error {
 	var x1, x2, y1, y2 float64
 	var err error
 	for _, attr := range attrs {
@@ -151,7 +151,7 @@ func lineF(c *iconCursor, attrs []xml.Attr) error {
 		Y: fixed.Int26_6((y2 + c.curY) * 64)})
 	return nil
 }
-func polylineF(c *iconCursor, attrs []xml.Attr) error {
+func polylineF(c *iconCursor, attrs []simplexml.Attr) error {
 	var err error
 	for _, attr := range attrs {
 		switch attr.Name.Local {
@@ -177,14 +177,14 @@ func polylineF(c *iconCursor, attrs []xml.Attr) error {
 	}
 	return nil
 }
-func polygonF(c *iconCursor, attrs []xml.Attr) error {
+func polygonF(c *iconCursor, attrs []simplexml.Attr) error {
 	err := polylineF(c, attrs)
 	if len(c.points) > 4 {
 		c.path.Stop(true)
 	}
 	return err
 }
-func pathF(c *iconCursor, attrs []xml.Attr) error {
+func pathF(c *iconCursor, attrs []simplexml.Attr) error {
 	var err error
 	for _, attr := range attrs {
 		switch attr.Name.Local {
@@ -197,21 +197,21 @@ func pathF(c *iconCursor, attrs []xml.Attr) error {
 	}
 	return nil
 }
-func descF(c *iconCursor, attrs []xml.Attr) error {
+func descF(c *iconCursor, attrs []simplexml.Attr) error {
 	c.inDescText = true
 	c.icon.Descriptions = append(c.icon.Descriptions, "")
 	return nil
 }
-func titleF(c *iconCursor, attrs []xml.Attr) error {
+func titleF(c *iconCursor, attrs []simplexml.Attr) error {
 	c.inTitleText = true
 	c.icon.Titles = append(c.icon.Titles, "")
 	return nil
 }
-func defsF(c *iconCursor, attrs []xml.Attr) error {
+func defsF(c *iconCursor, attrs []simplexml.Attr) error {
 	c.inDefs = true
 	return nil
 }
-func linearGradientF(c *iconCursor, attrs []xml.Attr) error {
+func linearGradientF(c *iconCursor, attrs []simplexml.Attr) error {
 	var err error
 	c.inGrad = true
 	// interpretation of percentage in direction depends
@@ -269,7 +269,7 @@ func linearGradientF(c *iconCursor, attrs []xml.Attr) error {
 	return nil
 }
 
-func radialGradientF(c *iconCursor, attrs []xml.Attr) error {
+func radialGradientF(c *iconCursor, attrs []simplexml.Attr) error {
 	c.inGrad = true
 	c.grad = &Gradient{Bounds: c.icon.ViewBox, Matrix: Identity}
 	var setFx, setFy bool
@@ -346,7 +346,7 @@ func radialGradientF(c *iconCursor, attrs []xml.Attr) error {
 	c.grad.Direction = direction
 	return nil
 }
-func stopF(c *iconCursor, attrs []xml.Attr) error {
+func stopF(c *iconCursor, attrs []simplexml.Attr) error {
 	var err error
 	if c.inGrad {
 		stop := GradStop{Opacity: 1.0}
@@ -370,7 +370,7 @@ func stopF(c *iconCursor, attrs []xml.Attr) error {
 	}
 	return nil
 }
-func useF(c *iconCursor, attrs []xml.Attr) error {
+func useF(c *iconCursor, attrs []simplexml.Attr) error {
 	var (
 		href string
 		x, y float64

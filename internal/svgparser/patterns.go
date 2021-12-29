@@ -1,7 +1,7 @@
 package svgparser
 
 import (
-	"encoding/xml"
+	"github.com/inkeliz/giosvg/internal/svgparser/simplexml"
 	"image/color"
 	"strconv"
 	"strings"
@@ -272,7 +272,7 @@ func (c *iconCursor) readGradURL(v string, defaultColor Pattern) (grad Gradient,
 }
 
 // readGradAttr reads an SVG gradient attribute
-func (c *iconCursor) readGradAttr(attr xml.Attr) (err error) {
+func (c *iconCursor) readGradAttr(attr simplexml.Attr) (err error) {
 	switch attr.Name.Local {
 	case "gradientTransform":
 		c.grad.Matrix, err = c.parseTransform(attr.Value)

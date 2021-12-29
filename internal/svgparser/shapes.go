@@ -12,7 +12,7 @@ import (
 const (
 	cubicsPerHalfCircle = 8 // Number of cubic beziers to approx half a circle
 
-	// fixed point t paramaterization shift factor;
+	// fixed point t parameterization shift factor;
 	// (2^this)/64 is the max length of t for fixed.Int26_6
 	tStrokeShift = 14
 

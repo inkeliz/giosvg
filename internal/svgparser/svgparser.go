@@ -1,8 +1,7 @@
 package svgparser
 
 import (
-	"encoding/xml"
-	"golang.org/x/net/html/charset"
+	"github.com/inkeliz/giosvg/internal/svgparser/simplexml"
 	"io"
 )
 
@@ -32,11 +31,11 @@ type Bounds struct{ X, Y, W, H float64 }
 // SVGRender holds data from parsed SVGs.
 // See the `Draw` methods to use it.
 type SVGRender struct {
-	ViewBox   Bounds
-	Titles    []string // Title elements collect here
+	ViewBox      Bounds
+	Titles       []string // Title elements collect here
 	Descriptions []string // Description elements collect here
-	SVGPaths  []SvgPath
-	Transform Matrix2D
+	SVGPaths     []SvgPath
+	Transform    Matrix2D
 
 	grads map[string]*Gradient
 	defs  map[string][]definition
@@ -49,8 +48,7 @@ type SVGRender struct {
 func ReadIcon(stream io.Reader) (*SVGRender, error) {
 	icon := &SVGRender{defs: make(map[string][]definition), grads: make(map[string]*Gradient), Transform: Identity}
 	cursor := &iconCursor{styleStack: []PathStyle{DefaultStyle}, icon: icon}
-	decoder := xml.NewDecoder(stream)
-	decoder.CharsetReader = charset.NewReaderLabel
+	decoder := simplexml.NewDecoder(stream)
 	for {
 		t, err := decoder.Token()
 		if err != nil {
@@ -61,7 +59,7 @@ func ReadIcon(stream io.Reader) (*SVGRender, error) {
 		}
 		// Inspect the type of the XML token
 		switch se := t.(type) {
-		case xml.StartElement:
+		case simplexml.StartElement:
 			// Reads all recognized style attributes from the start element
 			// and places it on top of the styleStack
 			err = cursor.pushStyle(se.Attr)
@@ -72,7 +70,7 @@ func ReadIcon(stream io.Reader) (*SVGRender, error) {
 			if err != nil {
 				return icon, err
 			}
-		case xml.EndElement:
+		case simplexml.EndElement:
 			// pop style
 			cursor.styleStack = cursor.styleStack[:len(cursor.styleStack)-1]
 			switch se.Name.Local {
@@ -94,13 +92,6 @@ func ReadIcon(stream io.Reader) (*SVGRender, error) {
 				cursor.inDefs = false
 			case "radialGradient", "linearGradient":
 				cursor.inGrad = false
-			}
-		case xml.CharData:
-			if cursor.inTitleText {
-				icon.Titles[len(icon.Titles)-1] += string(se)
-			}
-			if cursor.inDescText {
-				icon.Descriptions[len(icon.Descriptions)-1] += string(se)
 			}
 		}
 	}

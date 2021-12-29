@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"fmt"
 	"gioui.org/app"
 	"gioui.org/io/system"
 	"gioui.org/layout"
@@ -33,15 +34,17 @@ func main() {
 			app.MinSize(unit.Dp(393), unit.Dp(351)),
 			app.NavigationColor(color.NRGBA{R: 255, G: 8, B: 90, A: 255}),
 			app.StatusColor(color.NRGBA{R: 255, G: 8, B: 90, A: 255}),
-			app.PortraitOrientation.Option(),
-			app.Windowed.Option(),
 		)
 		defer window.Close()
 
+
+		t := time.Now()
 		render, err := giosvg.NewIconOp(data)
 		if err != nil {
 			panic(err)
 		}
+		fmt.Println("parse time", time.Since(t))
+
 
 		icon := giosvg.NewIcon(render)
 		ops := new(op.Ops)

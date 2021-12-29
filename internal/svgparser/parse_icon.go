@@ -2,9 +2,9 @@ package svgparser
 
 import (
 	"fmt"
+	"github.com/inkeliz/giosvg/internal/svgparser/simplexml"
 	"strings"
 
-	"encoding/xml"
 	"errors"
 	"log"
 	"math"
@@ -26,7 +26,7 @@ type (
 	// definition is used to store what's given in a def tag
 	definition struct {
 		ID, Tag string
-		Attrs   []xml.Attr
+		Attrs   []simplexml.Attr
 	}
 )
 
@@ -274,7 +274,7 @@ func (c *iconCursor) readStyleAttr(curStyle *PathStyle, k, v string) error {
 // pushStyle parses the style element, and push it on the style stack. Only color and opacity are supported
 // for fill. Note that this parses both the contents of a style attribute plus
 // direct fill and opacity attributes.
-func (c *iconCursor) pushStyle(attrs []xml.Attr) error {
+func (c *iconCursor) pushStyle(attrs []simplexml.Attr) error {
 	var pairs []string
 	for _, attr := range attrs {
 		switch strings.ToLower(attr.Name.Local) {
@@ -310,7 +310,7 @@ func splitOnCommaOrSpace(s string) []string {
 		})
 }
 
-func (c *iconCursor) readStartElement(se xml.StartElement) (err error) {
+func (c *iconCursor) readStartElement(se simplexml.StartElement) (err error) {
 	var skipDef bool
 	if se.Name.Local == "radialGradient" || se.Name.Local == "linearGradient" || c.inGrad {
 		skipDef = true
