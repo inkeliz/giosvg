@@ -2,17 +2,14 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
 	"gioui.org/app"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/unit"
 	"github.com/inkeliz/giosvg"
-	"image/color"
-	"math/rand"
-	"time"
 )
+
+//go:generate go run github.com/inkeliz/giosvg/cmd/svggen -i "." -o "./school-bus.go" -pkg "main"
 
 func init() {
 	//os.Setenv("GIORENDERER", "forcecompute")
@@ -28,34 +25,30 @@ func main() {
 	data := bus
 
 	go func() {
-		window := app.NewWindow(
-			app.Title("Gio"),
-			app.Size(unit.Dp(393), unit.Dp(851)),
-			app.MinSize(unit.Dp(393), unit.Dp(351)),
-			app.NavigationColor(color.NRGBA{R: 255, G: 8, B: 90, A: 255}),
-			app.StatusColor(color.NRGBA{R: 255, G: 8, B: 90, A: 255}),
-		)
-		defer window.Close()
+		window := app.NewWindow(app.Title("Gio"))
+		defer window.Perform(system.ActionClose)
 
-
-		t := time.Now()
-		render, err := giosvg.NewIconOp(data)
+		vector, err := giosvg.NewVector(data)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("parse time", time.Since(t))
 
+		iconRuntime := giosvg.NewIcon(vector)
+		iconGenerated := giosvg.NewIcon(VectorSchoolBus)
 
-		icon := giosvg.NewIcon(render)
 		ops := new(op.Ops)
 		for e := range window.Events() {
 			if e, ok := e.(system.FrameEvent); ok {
 				gtx := layout.NewContext(ops, e)
+				gtx.Constraints.Max.X, gtx.Constraints.Max.Y = 283, 283
 
-				gtx.Constraints.Max.X, gtx.Constraints.Max.Y = rand.Intn(gtx.Constraints.Max.X), rand.Intn(gtx.Constraints.Max.Y)
-				icon.Layout(gtx)
+				iconRuntime.Layout(gtx)
 
-				op.InvalidateOp{At: time.Now().Add(1 * time.Second)}.Add(gtx.Ops)
+				offset := op.Offset(layout.FPt(gtx.Constraints.Max)).Push(gtx.Ops)
+				iconGenerated.Layout(gtx)
+				offset.Pop()
+
+				op.InvalidateOp{}.Add(gtx.Ops)
 
 				e.Frame(ops)
 			}
