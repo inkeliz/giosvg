@@ -4,9 +4,8 @@ package svgparser
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform
 
 import (
+	"gioui.org/f32"
 	"math"
-
-	"golang.org/x/image/math/fixed"
 )
 
 // Matrix2D represents an SVG style matrix
@@ -80,10 +79,10 @@ func (a Matrix2D) Mult(b Matrix2D) Matrix2D {
 // Identity is the identity matrix
 var Identity = Matrix2D{1, 0, 0, 1, 0, 0}
 
-// TFixed transforms a fixed.Point26_6 by the matrix
-func (a Matrix2D) TFixed(x fixed.Point26_6) (y fixed.Point26_6) {
-	y.X = fixed.Int26_6((float64(x.X)*a.A + float64(x.Y)*a.C) + a.E*64)
-	y.Y = fixed.Int26_6((float64(x.X)*a.B + float64(x.Y)*a.D) + a.F*64)
+// TFixed transforms a f32.Point by the matrix
+func (a Matrix2D) TFixed(x f32.Point) (y f32.Point) {
+	y.X = float32((float64(x.X)*a.A + float64(x.Y)*a.C) + a.E)
+	y.Y = float32((float64(x.X)*a.B + float64(x.Y)*a.D) + a.F)
 	return
 }
 
@@ -170,37 +169,21 @@ func (t *matrixAdder) Reset() {
 }
 
 // Start starts a new path
-func (t *matrixAdder) Start(a fixed.Point26_6) {
+func (t *matrixAdder) Start(a f32.Point) {
 	t.path.Start(t.M.TFixed(a))
 }
 
 // Line adds a linear segment to the current curve.
-func (t *matrixAdder) Line(b fixed.Point26_6) {
+func (t *matrixAdder) Line(b f32.Point) {
 	t.path.Line(t.M.TFixed(b))
 }
 
 // QuadBezier adds a quadratic segment to the current curve.
-func (t *matrixAdder) QuadBezier(b, c fixed.Point26_6) {
+func (t *matrixAdder) QuadBezier(b, c f32.Point) {
 	t.path.QuadBezier(t.M.TFixed(b), t.M.TFixed(c))
 }
 
 // CubeBezier adds a cubic segment to the current curve.
-func (t *matrixAdder) CubeBezier(b, c, d fixed.Point26_6) {
+func (t *matrixAdder) CubeBezier(b, c, d f32.Point) {
 	t.path.CubeBezier(t.M.TFixed(b), t.M.TFixed(c), t.M.TFixed(d))
-}
-
-// transform the operation `m` by applying `t`
-func (t Matrix2D) trMove(m OpMoveTo) fixed.Point26_6 { return t.TFixed(fixed.Point26_6(m)) }
-
-// transform the operation `m` by applying `t`
-func (t Matrix2D) trLine(m OpLineTo) fixed.Point26_6 { return t.TFixed(fixed.Point26_6(m)) }
-
-// transform the operation `m` by applying `t`
-func (t Matrix2D) trQuad(m OpQuadTo) (fixed.Point26_6, fixed.Point26_6) {
-	return t.TFixed(fixed.Point26_6(m[0])), t.TFixed(fixed.Point26_6(m[1]))
-}
-
-// transform the operation `m` by applying `t`
-func (t Matrix2D) trCubic(m OpCubicTo) (fixed.Point26_6, fixed.Point26_6, fixed.Point26_6) {
-	return t.TFixed(fixed.Point26_6(m[0])), t.TFixed(fixed.Point26_6(m[1])), t.TFixed(fixed.Point26_6(m[2]))
 }

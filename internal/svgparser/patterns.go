@@ -186,8 +186,8 @@ type Gradient struct {
 // the gradient matrix is returned
 func (g *Gradient) ApplyPathExtent(extent fixed.Rectangle26_6) Matrix2D {
 	if g.Units == ObjectBoundingBox {
-		mnx, mny := float64(extent.Min.X)/64, float64(extent.Min.Y)/64
-		mxx, mxy := float64(extent.Max.X)/64, float64(extent.Max.Y)/64
+		mnx, mny := float64(extent.Min.X/64), float64(extent.Min.Y/64)
+		mxx, mxy := float64(extent.Max.X/64), float64(extent.Max.Y/64)
 		g.Bounds.X, g.Bounds.Y = mnx, mny
 		g.Bounds.W, g.Bounds.H = mxx-mnx, mxy-mny
 

@@ -6,12 +6,11 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"github.com/inkeliz/giosvg/internal/svgparser"
-	"golang.org/x/image/math/fixed"
 	"math"
 )
 
-func _f32(a fixed.Point26_6) f32.Point {
-	return f32.Pt(float32(a.X.Round()), float32(a.Y.Round()))
+func _f32(a f32.Point) f32.Point {
+	return a
 }
 
 type Driver struct {
@@ -37,7 +36,7 @@ type filler struct {
 
 func (f *filler) Clear() {}
 
-func (f *filler) Start(a fixed.Point26_6) {
+func (f *filler) Start(a f32.Point) {
 	if f.path == nil {
 		f.path = new(clip.Path)
 		f.path.Begin(f.pathOp)
@@ -46,15 +45,15 @@ func (f *filler) Start(a fixed.Point26_6) {
 	f.path.MoveTo(_f32(a))
 }
 
-func (f *filler) Line(b fixed.Point26_6) {
+func (f *filler) Line(b f32.Point) {
 	f.path.LineTo(_f32(b))
 }
 
-func (f *filler) QuadBezier(b, c fixed.Point26_6) {
+func (f *filler) QuadBezier(b, c f32.Point) {
 	f.path.QuadTo(_f32(b), _f32(c))
 }
 
-func (f *filler) CubeBezier(b, c, d fixed.Point26_6) {
+func (f *filler) CubeBezier(b, c, d f32.Point) {
 	f.path.CubeTo(_f32(b), _f32(c), _f32(d))
 }
 
@@ -90,7 +89,7 @@ type stroker struct {
 
 func (s *stroker) Clear() {}
 
-func (s *stroker) Start(a fixed.Point26_6) {
+func (s *stroker) Start(a f32.Point) {
 	if s.path == nil {
 		s.path = new(clip.Path)
 		s.path.Begin(s.pathOp)
@@ -99,15 +98,15 @@ func (s *stroker) Start(a fixed.Point26_6) {
 	s.path.MoveTo(_f32(a))
 }
 
-func (s *stroker) Line(b fixed.Point26_6) {
+func (s *stroker) Line(b f32.Point) {
 	s.path.LineTo(_f32(b))
 }
 
-func (s *stroker) QuadBezier(b, c fixed.Point26_6) {
+func (s *stroker) QuadBezier(b, c f32.Point) {
 	s.path.QuadTo(_f32(b), _f32(c))
 }
 
-func (s *stroker) CubeBezier(b, c, d fixed.Point26_6) {
+func (s *stroker) CubeBezier(b, c, d f32.Point) {
 	s.path.CubeTo(_f32(b), _f32(c), _f32(d))
 }
 
@@ -133,5 +132,5 @@ func (s *stroker) Draw(color svgparser.Pattern, opacity float64) {
 }
 
 func (s *stroker) SetStrokeOptions(options svgparser.StrokeOptions) {
-	s.Width = float32(options.LineWidth.Round()) * s.scale
+	s.Width = options.LineWidth * s.scale
 }

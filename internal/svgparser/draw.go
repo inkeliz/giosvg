@@ -1,7 +1,7 @@
 package svgparser
 
 import (
-	"golang.org/x/image/math/fixed"
+	"gioui.org/f32"
 )
 
 // Given a parsed SVG document, implements how to
@@ -15,16 +15,16 @@ import (
 // before sending them to the Drawer.
 type Drawer interface {
 	// Start starts a new path at the given point.
-	Start(a fixed.Point26_6)
+	Start(a f32.Point)
 
 	// Line Adds a line for the current point to `b`
-	Line(b fixed.Point26_6)
+	Line(b f32.Point)
 
 	// QuadBezier adds a quadratic bezier curve to the path
-	QuadBezier(b, c fixed.Point26_6)
+	QuadBezier(b, c f32.Point)
 
 	// CubeBezier adds a cubic bezier curve to the path
-	CubeBezier(b, c, d fixed.Point26_6)
+	CubeBezier(b, c, d f32.Point)
 
 	// Stop closes the path to the start point if `closeLoop` is true
 	Stop(closeLoop bool)
@@ -153,18 +153,18 @@ func (g GapMode) String() string {
 }
 
 type JoinOptions struct {
-	MiterLimit   fixed.Int26_6 // he miter cutoff value for miter, arc, miterclip and arcClip joinModes
-	LineJoin     JoinMode      // JoinMode for curve segments
-	TrailLineCap CapMode       // capping functions for leading and trailing line ends. If one is nil, the other function is used at both ends.
+	MiterLimit   float32  // he miter cutoff value for miter, arc, miterclip and arcClip joinModes
+	LineJoin     JoinMode // JoinMode for curve segments
+	TrailLineCap CapMode  // capping functions for leading and trailing line ends. If one is nil, the other function is used at both ends.
 
 	LeadLineCap CapMode // not part of the standard specification
 	LineGap     GapMode // not part of the standard specification. determines how a gap on the convex side of two lines joining is filled
 }
 
 type StrokeOptions struct {
-	LineWidth fixed.Int26_6 // width of the line
-	Join JoinOptions
-	Dash DashOptions
+	LineWidth float32 // width of the line
+	Join      JoinOptions
+	Dash      DashOptions
 }
 
 // DefaultStyle sets the default PathStyle to fill black, winding rule,
@@ -175,7 +175,7 @@ var DefaultStyle = PathStyle{
 	LineWidth:         2.0,
 	UseNonZeroWinding: true,
 	Join: JoinOptions{
-		MiterLimit:   fToFixed(4.),
+		MiterLimit:   4,
 		LineJoin:     Bevel,
 		TrailLineCap: ButtCap,
 	},
@@ -234,7 +234,7 @@ func (svgp *SvgPath) drawTransformed(d Driver, opacity float64, t Matrix2D) {
 			leadLineCap = svgp.Style.Join.LeadLineCap
 		}
 		stroker.SetStrokeOptions(StrokeOptions{
-			LineWidth: fixed.Int26_6(svgp.Style.LineWidth * 64),
+			LineWidth: float32(svgp.Style.LineWidth),
 			Join: JoinOptions{
 				MiterLimit:   svgp.Style.Join.MiterLimit,
 				LineJoin:     svgp.Style.Join.LineJoin,

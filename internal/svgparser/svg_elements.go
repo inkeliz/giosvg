@@ -2,10 +2,9 @@ package svgparser
 
 import (
 	"errors"
+	"gioui.org/f32"
 	"github.com/inkeliz/giosvg/internal/svgparser/simplexml"
 	"strings"
-
-	"golang.org/x/image/math/fixed"
 )
 
 func init() {
@@ -143,12 +142,14 @@ func lineF(c *iconCursor, attrs []simplexml.Attr) error {
 			return err
 		}
 	}
-	c.path.Start(fixed.Point26_6{
-		X: fixed.Int26_6((x1 + c.curX) * 64),
-		Y: fixed.Int26_6((y1 + c.curY) * 64)})
-	c.path.Line(fixed.Point26_6{
-		X: fixed.Int26_6((x2 + c.curX) * 64),
-		Y: fixed.Int26_6((y2 + c.curY) * 64)})
+	c.path.Start(f32.Point{
+		X: float32(x1 + c.curX),
+		Y: float32(y1 + c.curY),
+	})
+	c.path.Line(f32.Point{
+		X: float32(x2 + c.curX),
+		Y: float32(y2 + c.curY),
+	})
 	return nil
 }
 func polylineF(c *iconCursor, attrs []simplexml.Attr) error {
@@ -166,13 +167,15 @@ func polylineF(c *iconCursor, attrs []simplexml.Attr) error {
 		}
 	}
 	if len(c.points) > 4 {
-		c.path.Start(fixed.Point26_6{
-			X: fixed.Int26_6((c.points[0] + c.curX) * 64),
-			Y: fixed.Int26_6((c.points[1] + c.curY) * 64)})
+		c.path.Start(f32.Point{
+			X: float32(c.points[0] + c.curX),
+			Y: float32(c.points[1] + c.curY),
+		})
 		for i := 2; i < len(c.points)-1; i += 2 {
-			c.path.Line(fixed.Point26_6{
-				X: fixed.Int26_6((c.points[i] + c.curX) * 64),
-				Y: fixed.Int26_6((c.points[i+1] + c.curY) * 64)})
+			c.path.Line(f32.Point{
+				X: float32(c.points[i] + c.curX),
+				Y: float32(c.points[i+1] + c.curY),
+			})
 		}
 	}
 	return nil

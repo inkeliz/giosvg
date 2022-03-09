@@ -2,9 +2,8 @@ package svgparser
 
 import (
 	"fmt"
+	"gioui.org/f32"
 	"strings"
-
-	"golang.org/x/image/math/fixed"
 )
 
 // This file defines the basic path structure
@@ -19,19 +18,19 @@ type Operation interface {
 }
 
 // OpMoveTo moves the current point.
-type OpMoveTo fixed.Point26_6
+type OpMoveTo f32.Point
 
 // OpLineTo draws a line from the current point,
 // and updates it.
-type OpLineTo fixed.Point26_6
+type OpLineTo f32.Point
 
 // OpQuadTo draws a quadratic Bezier curve from the current point,
 // and updates it.
-type OpQuadTo [2]fixed.Point26_6
+type OpQuadTo [2]f32.Point
 
 // OpCubicTo draws a cubic Bezier curve from the current point,
 // and updates it.
-type OpCubicTo [3]fixed.Point26_6
+type OpCubicTo [3]f32.Point
 
 // OpClose close the current path.
 type OpClose struct{}
@@ -39,28 +38,25 @@ type OpClose struct{}
 // starts a new path at the given point.
 func (op OpMoveTo) drawTo(d Drawer, M Matrix2D) {
 	d.Stop(false) // implicit close if currently in path.
-	d.Start(M.trMove(op))
+	d.Start(M.TFixed(f32.Point(op)))
 }
 
 // draw a line
 func (op OpLineTo) drawTo(d Drawer, M Matrix2D) {
-	d.Line(M.trLine(op))
+	d.Line(M.TFixed(f32.Point(op)))
 }
 
 // draw a quadratic bezier curve
 func (op OpQuadTo) drawTo(d Drawer, M Matrix2D) {
-	b, c := M.trQuad(op)
-	d.QuadBezier(b, c)
+	d.QuadBezier(M.TFixed(op[0]), M.TFixed(op[1]))
 }
 
 // draw a cubic bezier curve
 func (op OpCubicTo) drawTo(d Drawer, M Matrix2D) {
-	b, c, d_ := M.trCubic(op)
-	d.CubeBezier(b, c, d_)
+	d.CubeBezier(M.TFixed(op[0]), M.TFixed(op[1]), M.TFixed(op[2]))
 }
 
-func (op OpClose) drawTo(
-	d Drawer, _ Matrix2D) {
+func (op OpClose) drawTo(d Drawer, _ Matrix2D) {
 	d.Stop(true)
 }
 
@@ -110,22 +106,22 @@ func (p *Path) Clear() {
 }
 
 // Start starts a new curve at the given point.
-func (p *Path) Start(a fixed.Point26_6) {
-	*p = append(*p, OpMoveTo{a.X, a.Y})
+func (p *Path) Start(a f32.Point) {
+	*p = append(*p, OpMoveTo(a))
 }
 
 // Line adds a linear segment to the current curve.
-func (p *Path) Line(b fixed.Point26_6) {
-	*p = append(*p, OpLineTo{b.X, b.Y})
+func (p *Path) Line(b f32.Point) {
+	*p = append(*p, OpLineTo(b))
 }
 
 // QuadBezier adds a quadratic segment to the current curve.
-func (p *Path) QuadBezier(b, c fixed.Point26_6) {
+func (p *Path) QuadBezier(b, c f32.Point) {
 	*p = append(*p, OpQuadTo{b, c})
 }
 
 // CubeBezier adds a cubic segment to the current curve.
-func (p *Path) CubeBezier(b, c, d fixed.Point26_6) {
+func (p *Path) CubeBezier(b, c, d f32.Point) {
 	*p = append(*p, OpCubicTo{b, c, d})
 }
 

@@ -8,8 +8,6 @@ import (
 	"errors"
 	"log"
 	"math"
-
-	"golang.org/x/image/math/fixed"
 )
 
 type (
@@ -30,8 +28,8 @@ type (
 	}
 )
 
-func fToFixed(f float64) fixed.Int26_6 {
-	return fixed.Int26_6(f * 64)
+func fToFixed(f float64) float32 {
+	return float32(f)
 }
 
 // treat the error according to the errorMode
