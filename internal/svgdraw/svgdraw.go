@@ -9,10 +9,6 @@ import (
 	"math"
 )
 
-func _f32(a f32.Point) f32.Point {
-	return a
-}
-
 type Driver struct {
 	Ops   *op.Ops
 	Scale float32
@@ -42,19 +38,19 @@ func (f *filler) Start(a f32.Point) {
 		f.path.Begin(f.pathOp)
 	}
 
-	f.path.MoveTo(_f32(a))
+	f.path.MoveTo(a)
 }
 
 func (f *filler) Line(b f32.Point) {
-	f.path.LineTo(_f32(b))
+	f.path.LineTo(b)
 }
 
 func (f *filler) QuadBezier(b, c f32.Point) {
-	f.path.QuadTo(_f32(b), _f32(c))
+	f.path.QuadTo(b, c)
 }
 
 func (f *filler) CubeBezier(b, c, d f32.Point) {
-	f.path.CubeTo(_f32(b), _f32(c), _f32(d))
+	f.path.CubeTo(b, c, d)
 }
 
 func (f *filler) Stop(closeLoop bool) {
@@ -95,19 +91,19 @@ func (s *stroker) Start(a f32.Point) {
 		s.path.Begin(s.pathOp)
 	}
 
-	s.path.MoveTo(_f32(a))
+	s.path.MoveTo(a)
 }
 
 func (s *stroker) Line(b f32.Point) {
-	s.path.LineTo(_f32(b))
+	s.path.LineTo(b)
 }
 
 func (s *stroker) QuadBezier(b, c f32.Point) {
-	s.path.QuadTo(_f32(b), _f32(c))
+	s.path.QuadTo(b, c)
 }
 
 func (s *stroker) CubeBezier(b, c, d f32.Point) {
-	s.path.CubeTo(_f32(b), _f32(c), _f32(d))
+	s.path.CubeTo(b, c, d)
 }
 
 func (s *stroker) Stop(closeLoop bool) {
