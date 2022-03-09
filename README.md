@@ -8,24 +8,24 @@ Give to your app some SVG icons. (:
 Example:
 
     // Embed your SVG into Golang:
-    //go:embed  your_icon.svg
+    //go:embed your_icon.svg
     var iconFile []byte
 
-	// Give your SVG to the IconOp:
-	iconOp, err := giosvg.NewIconOp(iconFile)
+	// Give your SVG/XML to the Vector:
+	vector, err := giosvg.NewVector(iconFile)
 	if err != nil {
 		panic(err)
 	}
 	
 	// Create the Icon:
-	icon := giosvg.NewIcon(iconOp)
+	icon := giosvg.NewIcon(vector)
 
     func someWidget(gtx layout.Context) layout.Dimensions {
 	    // Render your icon anywhere:
         return icon.Layout(gtx)
     }
 
-You can use `embed` to include your icon. The `iconOp` can be reused to avoid parse the SVG multiple times.
+You can use `embed` to include your icon. The `Vector` can be reused to avoid parse the SVG multiple times.
 
 If your icon uses `currentColor`, you can use `paint.ColorOp`:
 

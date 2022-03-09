@@ -10,46 +10,45 @@ import (
 	"io"
 )
 
-// IconOp hold the information from the XML/SVG file, in order to avoid
+// Vector hold the information from the XML/SVG file, in order to avoid
 // decoding of the XML.
-type IconOp struct {
-	render *svgparser.SVGRender
+type Vector func(ops *op.Ops, w, h float32)
+
+// Layout implements layout.Widget, that renders the current vector without any cache.
+// Consider using NewIcon instead.
+//
+// You should avoid it, that functions only exists to simplify integration
+// to custom cache implementations.
+func (v Vector) Layout(gtx layout.Context) layout.Dimensions {
+	v(gtx.Ops, float32(gtx.Constraints.Max.X), float32(gtx.Constraints.Max.Y))
+	return layout.Dimensions{Size: gtx.Constraints.Max}
 }
 
-// NewIconOpReader creates an IconOp from the given io.Reader. The data is
-// expected to be an SVG.
-//
-// It's safe, and recommended, to reuse the same IconOp across multiples
-// Icon. That will avoid the reading of XML/SVG, everytime that the size
-// changes.
-func NewIconOpReader(reader io.Reader) (*IconOp, error) {
+// NewVector creates an IconOp from the given data. The data is
+// expected to be an SVG/XML
+func NewVector(data []byte) (Vector, error) {
+	return NewVectorReader(bytes.NewReader(data))
+}
+
+// NewVectorReader creates an IconOp from the given io.Reader. The data is
+// expected to be an SVG/XML
+func NewVectorReader(reader io.Reader) (Vector, error) {
 	render, err := svgparser.ReadIcon(reader)
 	if err != nil {
 		return nil, err
 	}
 
-	return &IconOp{render: render}, nil
+	return func(ops *op.Ops, w, h float32) {
+		render.SetTarget(0, 0, float64(w), float64(h))
+		render.Draw(&svgdraw.Driver{Ops: ops}, 1.0)
+	}, nil
 }
 
-// NewIconOp creates an IconOp from the given data. The data is
-// expected to be an SVG.
-//
-// It's safe, and recommended, to reuse the same IconOp across multiples
-// Icon. That will avoid the reading of XML/SVG, everytime that the size
-// changes.
-func NewIconOp(data []byte) (*IconOp, error) {
-	return NewIconOpReader(bytes.NewReader(data))
-}
-
-// Icon holds the information of the SVG, and the latest draw.
-// It's safe to reuse the same Icon, as long as all of them use the same
-// size.
-// If the same icon is rendered in different sizes, consider to create
-// a new Icon from each one, reusing the same IconOp.
+// Icon keeps a cache from the last frame and re-uses it if
+// the size didn't change.
 type Icon struct {
-	iconOp *IconOp
+	vector Vector
 
-	driver   *svgdraw.Driver
 	lastSize image.Point
 	macro    op.CallOp
 	op       *op.Ops
@@ -60,21 +59,14 @@ type Icon struct {
 // and the drawing is used if the size remains unchanged. You should
 // reuse the same Icon across multiples frames.
 //
-// Make use to not reuse the Icon with different sizes concurrently,
-// otherwise the macro will be useless. So, if the same Icon is used twice
-// in the same frame, and each one have different sizes, your app will be
-// significant slower. You can re-use the same IconOp with multiple Icon.
-func NewIcon(iconOp *IconOp) *Icon {
+// Make sure to not reuse the Icon with different sizes in the same frame,
+// if the same Icon is used twice  in the same frame you MUST create
+// two Icon, for each one.
+func NewIcon(vector Vector) *Icon {
 	return &Icon{
-		iconOp:   iconOp,
-		driver:   &svgdraw.Driver{},
+		vector:   vector,
 		lastSize: image.Point{},
 
-		// Due to some bug (?) in Gio, that escape the stack,
-		// we need to create one macro for each operation.
-		//
-		// That macro is mandatory to eliminate the allocation
-		// by internal/stroke, which is significant.
 		op: new(op.Ops),
 	}
 }
@@ -90,17 +82,10 @@ func (icon *Icon) Layout(gtx layout.Context) layout.Dimensions {
 
 		icon.op.Reset()
 		macro := op.Record(icon.op)
-		icon.parserToGio(gtx)
+		icon.vector(icon.op, float32(gtx.Constraints.Max.X), float32(gtx.Constraints.Max.Y))
 		icon.macro = macro.Stop()
 	}
 
 	icon.macro.Add(gtx.Ops)
 	return layout.Dimensions{Size: gtx.Constraints.Max}
-}
-
-func (icon *Icon) parserToGio(gtx layout.Context) {
-	icon.driver.Scale = gtx.Metric.PxPerDp
-	icon.driver.Ops = icon.op
-	icon.iconOp.render.SetTarget(0, 0, float64(gtx.Constraints.Max.X), float64(gtx.Constraints.Max.Y))
-	icon.iconOp.render.Draw(icon.driver, 1.0)
 }

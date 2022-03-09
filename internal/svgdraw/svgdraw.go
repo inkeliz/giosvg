@@ -11,7 +11,6 @@ import (
 
 type Driver struct {
 	Ops   *op.Ops
-	Scale float32
 	index int
 }
 
@@ -20,7 +19,7 @@ func (d *Driver) SetupDrawers(willFill, willStroke bool) (f svgparser.Filler, s 
 		f = &filler{pathOp: d.Ops}
 	}
 	if willStroke {
-		s = &stroker{pathOp: d.Ops, scale: d.Scale}
+		s = &stroker{pathOp: d.Ops}
 	}
 	return f, s
 }
@@ -79,7 +78,6 @@ func (f *filler) SetWinding(useNonZeroWinding bool) {}
 type stroker struct {
 	path   *clip.Path
 	pathOp *op.Ops
-	scale  float32
 	Width  float32
 }
 
@@ -128,5 +126,5 @@ func (s *stroker) Draw(color svgparser.Pattern, opacity float64) {
 }
 
 func (s *stroker) SetStrokeOptions(options svgparser.StrokeOptions) {
-	s.Width = options.LineWidth * s.scale
+	s.Width = options.LineWidth
 }
