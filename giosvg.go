@@ -40,7 +40,8 @@ func NewVectorReader(reader io.Reader) (Vector, error) {
 
 	return func(ops *op.Ops, w, h float32) {
 		render.SetTarget(0, 0, float64(w), float64(h))
-		render.Draw(&svgdraw.Driver{Ops: ops}, 1.0)
+		scale := (float32(float64(w)/render.ViewBox.W) + float32(float64(h)/render.ViewBox.H)) / 2
+		render.Draw(&svgdraw.Driver{Ops: ops, Scale: scale}, 1.0)
 	}, nil
 }
 

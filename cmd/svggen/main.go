@@ -86,14 +86,16 @@ var _, _, _, _, _, _ = (*f32.Point)(nil), (*op.Ops)(nil), (*clip.Op)(nil), (*pai
 		fmt.Fprintf(out, `var Vector%s giosvg.Vector = func(ops *op.Ops, w, h float32) {`+"\r\n", name)
 
 		fmt.Fprintf(out, `var (
-	aff = f32.Affine2D{}.Scale(f32.Point{X: float32(0 - %f), Y: float32(0 - %f)}, f32.Point{X: w / %f, Y: h / %f})
+	size = f32.Point{X: w / %f, Y: h / %f}
+	avg = (size.X + size.Y) / 2
+	aff = f32.Affine2D{}.Scale(f32.Point{X: float32(0 - %f), Y: float32(0 - %f)}, size)
 
 	end 		clip.PathSpec
 	path		clip.Path
 	stroke, outline clip.Stack
-)`+"\r\n", svg.ViewBox.X, svg.ViewBox.Y, svg.ViewBox.W, svg.ViewBox.H)
+)`+"\r\n", svg.ViewBox.W, svg.ViewBox.H, svg.ViewBox.X, svg.ViewBox.Y)
 
-		fmt.Fprintf(out, `_, _, _, _ = path, stroke, outline, end`+"\r\n")
+		fmt.Fprintf(out, `_, _, _, _, _, _ = avg, aff, end, path, stroke, outline`+"\r\n")
 
 		for _, v := range svg.SVGPaths {
 			if v.Style.FillerColor == nil && v.Style.LinerColor == nil {
@@ -139,7 +141,7 @@ var _, _, _, _, _, _ = (*f32.Point)(nil), (*op.Ops)(nil), (*clip.Op)(nil), (*pai
 						fmt.Fprintf(out, `outline.Pop()`+"\r\n")
 					}
 					if v.Style.LinerColor != nil {
-						fmt.Fprintf(out, `stroke = clip.Stroke{Path: end, Width: %f}.Op().Push(ops)`+"\r\n", v.Style.LineWidth)
+						fmt.Fprintf(out, `stroke = clip.Stroke{Path: end, Width: %f * avg}.Op().Push(ops)`+"\r\n", v.Style.LineWidth)
 						paint(v.Style.LinerColor, v.Style.LineOpacity)
 						fmt.Fprintf(out, `stroke.Pop()`+"\r\n")
 					}
