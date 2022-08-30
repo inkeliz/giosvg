@@ -27,7 +27,7 @@ Example:
 
 You can use `embed` to include your icon. The `Vector` can be reused to avoid parse the SVG multiple times.
 
-If your icon uses `currentColor`, you can use `paint.ColorOp`:
+If your icon use `currentColor`, you can use `paint.ColorOp`:
 
     func someWidget(gtx layout.Context) layout.Dimensions {
 	    // Render your icon anywhere, with custom color:
@@ -35,11 +35,7 @@ If your icon uses `currentColor`, you can use `paint.ColorOp`:
         return icon.Layout(gtx)
     }
 
-
 ------------
 
-The icons in the `example` are from Freepik from Flaticon Licensed by Creative Commons 3.0.
-
-----------
-
-That work is based on OKSVG.
+Icons in the `example` are from Freepik and from Flaticon Licensed by Creative Commons 3.0. This package
+is based on OKSVG.
