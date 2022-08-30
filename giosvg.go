@@ -2,12 +2,13 @@ package giosvg
 
 import (
 	"bytes"
+	"image"
+	"io"
+
 	"gioui.org/layout"
 	"gioui.org/op"
 	"github.com/inkeliz/giosvg/internal/svgdraw"
 	"github.com/inkeliz/giosvg/internal/svgparser"
-	"image"
-	"io"
 )
 
 // Vector hold the information from the XML/SVG file, in order to avoid
@@ -39,7 +40,7 @@ func NewVectorReader(reader io.Reader) (Vector, error) {
 	}
 
 	return func(ops *op.Ops, w, h float32) {
-		render.SetTarget(0, 0, float64(w), float64(h))
+		render.SetTarget(0-render.ViewBox.X, 0-render.ViewBox.Y, float64(w), float64(h))
 		scale := (float32(float64(w)/render.ViewBox.W) + float32(float64(h)/render.ViewBox.H)) / 2
 		render.Draw(&svgdraw.Driver{Ops: ops, Scale: scale}, 1.0)
 	}, nil
