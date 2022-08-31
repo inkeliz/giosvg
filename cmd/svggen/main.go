@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/inkeliz/giosvg/internal/svgparser"
 	"go/format"
 	"io"
 	"math"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/inkeliz/giosvg/internal/svgparser"
 )
 
 var (
@@ -56,15 +57,18 @@ func main() {
 	fmt.Fprintf(out, `package %s
 
 import (
+	"image"	
+	"image/color"
+
 	"gioui.org/f32"
 	"gioui.org/op"
+	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"github.com/inkeliz/giosvg"
-	"image/color"
 )
 
-var _, _, _, _, _, _ = (*f32.Point)(nil), (*op.Ops)(nil), (*clip.Op)(nil), (*paint.PaintOp)(nil), (*giosvg.Vector)(nil), (*color.NRGBA)(nil)
+var _, _, _, _, _, _, _, _ = (*f32.Point)(nil), (*op.Ops)(nil), (*clip.Op)(nil), (*paint.PaintOp)(nil), (*giosvg.Vector)(nil), (*color.NRGBA)(nil), (*layout.Dimensions)(nil), (*image.Image)(nil)
 `, pkg)
 
 	for _, path := range paths {
@@ -83,9 +87,41 @@ var _, _, _, _, _, _ = (*f32.Point)(nil), (*op.Ops)(nil), (*clip.Op)(nil), (*pai
 		name = strings.Title(strings.Replace(name, filepath.Ext(name), "", -1))
 		name = strings.Replace(name, " ", "", -1)
 
-		fmt.Fprintf(out, `var Vector%s giosvg.Vector = func(ops *op.Ops, w, h float32) {`+"\r\n", name)
+		fmt.Fprintf(out, `var Vector%s giosvg.Vector = func(ops *op.Ops, constraints giosvg.Constraints) layout.Dimensions {`+"\r\n", name)
 
-		fmt.Fprintf(out, `var (
+		fmt.Fprintf(out, `var w, h float32`+"\r\n")
+		fmt.Fprintf(out, `if constraints.Max != constraints.Min {`+"\r\n")
+		if svg.ViewBox.W >= svg.ViewBox.H {
+			fmt.Fprintf(out, `
+			d := float32(%f)
+			if constraints.Max.Y*d > constraints.Max.X {
+				w, h = constraints.Max.X, constraints.Max.X/d
+			} else {
+				w, h = constraints.Max.Y*d, constraints.Max.Y
+			}`, svg.ViewBox.W/svg.ViewBox.H)
+
+		} else {
+			fmt.Fprintf(out, `
+			d := float32(%f)
+			if constraints.Max.X*d > constraints.Max.Y {
+				w, h = constraints.Max.Y/d, constraints.Max.Y
+			} else {
+				w, h = constraints.Max.X, constraints.Max.X*d
+			}`, svg.ViewBox.H/svg.ViewBox.W)
+		}
+		fmt.Fprintf(out, `}`+"\r\n")
+
+		fmt.Fprintf(out, `
+		if constraints.Min.X > w {
+			w = constraints.Min.X
+		}
+		if constraints.Min.Y > h {
+			h = constraints.Min.Y
+		}
+`)
+
+		fmt.Fprintf(out, `
+var (
 	size = f32.Point{X: w / %f, Y: h / %f}
 	avg = (size.X + size.Y) / 2
 	aff = f32.Affine2D{}.Scale(f32.Point{X: float32(0 - %f), Y: float32(0 - %f)}, size)
@@ -149,6 +185,7 @@ var _, _, _, _, _, _ = (*f32.Point)(nil), (*op.Ops)(nil), (*clip.Op)(nil), (*pai
 			}
 		}
 
+		fmt.Fprintf(out, `return layout.Dimensions{Size: image.Point{X: int(w), Y: int(h)}}`+"\r\n")
 		fmt.Fprintln(out, `}`)
 
 		f.Close()
