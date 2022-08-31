@@ -65,7 +65,7 @@ func NewVectorReader(reader io.Reader) (Vector, error) {
 		}
 
 		render.SetTarget(0-render.ViewBox.X, 0-render.ViewBox.Y, float64(w), float64(h))
-		scale := float32(float64(w)/render.ViewBox.W) + float32(float64(h)/render.ViewBox.H)/2
+		scale := float32(float32(float64(w)/render.ViewBox.W)+float32(float64(h)/render.ViewBox.H)) / 2
 		render.Draw(&svgdraw.Driver{Ops: ops, Scale: scale}, 1.0)
 
 		return layout.Dimensions{Size: image.Point{X: int(w), Y: int(h)}}
