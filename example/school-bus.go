@@ -1,24 +1,47 @@
 package main
 
 import (
+	"image"
+	"image/color"
+
 	"gioui.org/f32"
+	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"github.com/inkeliz/giosvg"
-	"image/color"
 )
 
-var _, _, _, _, _, _ = (*f32.Point)(nil), (*op.Ops)(nil), (*clip.Op)(nil), (*paint.PaintOp)(nil), (*giosvg.Vector)(nil), (*color.NRGBA)(nil)
-var VectorSchoolBus giosvg.Vector = func(ops *op.Ops, w, h float32) {
+var _, _, _, _, _, _, _ = (*f32.Point)(nil), (*op.Ops)(nil), (*clip.Op)(nil), (*paint.PaintOp)(nil), (*giosvg.Vector)(nil), (*color.NRGBA)(nil), (*layout.Dimensions)(nil)
+var VectorSchoolBus giosvg.Vector = func(ops *op.Ops, constraints giosvg.Constraints) layout.Dimensions {
+	var w, h float32
+	if constraints.Max != constraints.Min {
+
+		d := float32(1.000000)
+		if constraints.Max.Y*d > constraints.Max.X {
+			w, h = constraints.Max.X, constraints.Max.X/d
+		} else {
+			w, h = constraints.Max.Y*d, constraints.Max.Y
+		}
+	}
+
+	if constraints.Min.X > w {
+		w = constraints.Min.X
+	}
+	if constraints.Min.Y > h {
+		h = constraints.Min.Y
+	}
+
 	var (
-		aff = f32.Affine2D{}.Scale(f32.Point{X: float32(0 - 0.000000), Y: float32(0 - 0.000000)}, f32.Point{X: w / 512.001000, Y: h / 512.001000})
+		size = f32.Point{X: w / 512.001000, Y: h / 512.001000}
+		avg  = (size.X + size.Y) / 2
+		aff  = f32.Affine2D{}.Scale(f32.Point{X: float32(0 - 0.000000), Y: float32(0 - 0.000000)}, size)
 
 		end             clip.PathSpec
 		path            clip.Path
 		stroke, outline clip.Stack
 	)
-	_, _, _, _ = path, stroke, outline, end
+	_, _, _, _, _, _ = avg, aff, end, path, stroke, outline
 
 	path = clip.Path{}
 	path.Begin(ops)
@@ -1525,4 +1548,5 @@ var VectorSchoolBus giosvg.Vector = func(ops *op.Ops, w, h float32) {
 	paint.ColorOp{Color: color.NRGBA{R: 45, G: 64, B: 78, A: 255}}.Add(ops)
 	paint.PaintOp{}.Add(ops)
 	outline.Pop()
+	return layout.Dimensions{Size: image.Point{X: int(w), Y: int(h)}}
 }
