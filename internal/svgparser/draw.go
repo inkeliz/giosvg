@@ -172,7 +172,7 @@ type StrokeOptions struct {
 var DefaultStyle = PathStyle{
 	FillOpacity:       1.0,
 	LineOpacity:       1.0,
-	LineWidth:         2.0,
+	LineWidth:         1.0,
 	UseNonZeroWinding: true,
 	Join: JoinOptions{
 		MiterLimit:   4,
