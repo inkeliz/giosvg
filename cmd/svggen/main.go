@@ -48,9 +48,12 @@ func main() {
 		if output != "" {
 			abs, _ := filepath.Abs(output)
 			pkg = filepath.Base(filepath.Dir(abs))
+			pkg = strings.Replace(pkg, "", "_", -1)
+			pkg = strings.Replace(pkg, "-", "_", -1)
 		} else {
 			pkg = "assets"
 		}
+		fmt.Printf("package name not defined, use -pkg flag to set a custom name. Using %s as name instead. \n", pkg)
 	}
 
 	out := bytes.NewBuffer(nil)
