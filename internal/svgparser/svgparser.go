@@ -15,7 +15,7 @@ type PathStyle struct {
 	Dash                    DashOptions
 	FillerColor, LinerColor Pattern // either PlainColor or Gradient
 
-	transform Matrix2D // current transform
+	Transform Matrix2D // current transform
 }
 
 // SvgPath binds a style to a path

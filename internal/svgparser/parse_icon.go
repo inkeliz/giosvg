@@ -104,7 +104,7 @@ func (c *iconCursor) readTransformAttr(m1 Matrix2D, k string) (Matrix2D, error) 
 
 func (c *iconCursor) parseTransform(v string) (Matrix2D, error) {
 	ts := strings.Split(v, ")")
-	m1 := c.styleStack[len(c.styleStack)-1].transform
+	m1 := c.styleStack[len(c.styleStack)-1].Transform
 	for _, t := range ts {
 		t = strings.TrimSpace(t)
 		if len(t) == 0 {
@@ -264,7 +264,7 @@ func (c *iconCursor) readStyleAttr(curStyle *PathStyle, k, v string) error {
 		if err != nil {
 			return err
 		}
-		curStyle.transform = m
+		curStyle.Transform = m
 	}
 	return nil
 }

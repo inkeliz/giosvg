@@ -128,7 +128,8 @@ var _, _, _, _, _, _, _, _ = (*f32.Point)(nil), (*op.Ops)(nil), (*clip.Op)(nil),
 var (
 	size = f32.Point{X: w / %f, Y: h / %f}
 	avg = (size.X + size.Y) / 2
-	aff = f32.Affine2D{}.Scale(f32.Point{X: float32(0 - %f), Y: float32(0 - %f)}, size)
+	affBase = f32.Affine2D{}.Scale(f32.Point{X: float32(0 - %f), Y: float32(0 - %f)}, size)
+	aff = affBase
 
 	end 		clip.PathSpec
 	path		clip.Path
@@ -140,6 +141,12 @@ var (
 		for _, v := range svg.SVGPaths {
 			if v.Style.FillerColor == nil && v.Style.LinerColor == nil {
 				continue
+			}
+
+			if t := v.Style.Transform; t != svgparser.Identity {
+				fmt.Fprintf(out, `aff = affBase.Mul(f32.NewAffine2D(%f, %f, %f, %f, %f, %f))`+"\r\n", t.A, t.C, t.E, t.B, t.D, t.F)
+			} else {
+				fmt.Fprintf(out, `aff = affBase`+"\r\n")
 			}
 
 			fmt.Fprintf(out, "\r\n"+`path = clip.Path{}`+"\r\n")

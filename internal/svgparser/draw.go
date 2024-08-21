@@ -180,7 +180,7 @@ var DefaultStyle = PathStyle{
 		TrailLineCap: ButtCap,
 	},
 	FillerColor: NewPlainColor(0x00, 0x00, 0x00, 0xff),
-	transform:   Identity,
+	Transform:   Identity,
 }
 
 // SetTarget sets the Transform matrix to draw within the bounds of the rectangle arguments
@@ -203,16 +203,16 @@ func (s *SVGRender) Draw(d Driver, opacity float64) {
 
 // drawTransformed draws the compiled SvgPath into the driver while applying transform t.
 func (svgp *SvgPath) drawTransformed(d Driver, opacity float64, t Matrix2D) {
-	m := svgp.Style.transform
-	svgp.Style.transform = t.Mult(m)
-	defer func() { svgp.Style.transform = m }() // Restore untransformed matrix
+	m := svgp.Style.Transform
+	svgp.Style.Transform = t.Mult(m)
+	defer func() { svgp.Style.Transform = m }() // Restore untransformed matrix
 
 	filler, stroker := d.SetupDrawers(svgp.Style.FillerColor != nil, svgp.Style.LinerColor != nil)
 	if filler != nil { // nil color disable filling
 		filler.SetWinding(svgp.Style.UseNonZeroWinding)
 
 		for _, op := range svgp.Path {
-			op.drawTo(filler, svgp.Style.transform)
+			op.drawTo(filler, svgp.Style.Transform)
 		}
 		filler.Stop(false)
 
@@ -246,7 +246,7 @@ func (svgp *SvgPath) drawTransformed(d Driver, opacity float64, t Matrix2D) {
 		})
 
 		for _, op := range svgp.Path {
-			op.drawTo(stroker, svgp.Style.transform)
+			op.drawTo(stroker, svgp.Style.Transform)
 		}
 		stroker.Stop(false)
 
